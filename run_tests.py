@@ -14,7 +14,24 @@ import sys
 
 QUESTIONS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7']
 
+TITLES = {
+    'q1': 'Depth First Search',
+    'q2': 'Breadth First Search',
+    'q3': 'Uniform Cost Search',
+    'q4': 'A* Search',
+    'q5': 'Corners Problem',
+    'q6': 'Corners Heuristic',
+    'q7': 'Food Heuristic',
+}
+
 SCORE_RE = re.compile(r'### Question (q\d+): (\d+)/(\d+) ###')
+
+# The autograder reports node counts in three different formats.
+NODES_RES = [
+    re.compile(r'nodes expanded:\s+(\d+)'),             # q1-q4 pacman tests
+    re.compile(r'expansion of (\d+) nodes'),             # q6 corners heuristic
+    re.compile(r'expanded nodes:\s+(\d+)'),             # q7 trickySearch
+]
 
 
 def runQuestion(question):
@@ -37,13 +54,55 @@ def parseScore(output, question):
     return None
 
 
-def main():
-    for question in QUESTIONS:
-        score = parseScore(runQuestion(question), question)
+def questionSection(output, question):
+    """Return only the part of the output that belongs to this question."""
+    start = output.find('Question %s\n' % question)
+    end = output.find('### Question %s:' % question)
+    if start == -1 or end == -1:
+        return output
+    return output[start:end]
+
+
+def parseNodes(output, question):
+    """Return the node counts the autograder printed for the question."""
+    section = questionSection(output, question)
+    nodes = []
+    for pattern in NODES_RES:
+        nodes.extend(int(n) for n in pattern.findall(section))
+    return nodes
+
+
+def printSummary(results):
+    """Print one row per question and a total line."""
+    print('%-4s %-22s %-7s %-6s %s' % ('Q', 'Problem', 'Score', 'Status', 'Nodes expanded'))
+    print('-' * 64)
+    totalPoints = totalMax = 0
+    for question, score, nodes in results:
         if score is None:
-            print('%s: no score found (crashed?)' % question)
-        else:
-            print('%s: %d/%d' % (question, score[0], score[1]))
+            print('%-4s %-22s %-7s %-6s' % (question, TITLES[question], '-', 'ERROR'))
+            continue
+        points, maxPoints = score
+        totalPoints += points
+        totalMax += maxPoints
+        status = 'PASS' if points >= maxPoints else 'FAIL'
+        nodeText = ', '.join(str(n) for n in nodes) if nodes else '-'
+        print('%-4s %-22s %-7s %-6s %s' % (question, TITLES[question],
+                                           '%d/%d' % (points, maxPoints), status, nodeText))
+    print('-' * 64)
+    print('Total: %d/%d' % (totalPoints, totalMax))
+
+
+def main():
+    results = []
+    for question in QUESTIONS:
+        output = runQuestion(question)
+        results.append((question, parseScore(output, question), parseNodes(output, question)))
+    printSummary(results)
+
+    # Non-zero exit code if any question did not get full marks, so the
+    # script can be used before merging a pull request.
+    allPassed = all(score is not None and score[0] >= score[1] for _, score, _ in results)
+    sys.exit(0 if allPassed else 1)
 
 
 if __name__ == '__main__':
