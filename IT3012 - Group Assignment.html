@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>SE3062 Take-Home Assignment 04: Search Algorithms in Pac-Man (Group Project)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{
+    --ink:#1f2937; --muted:#4b5563; --navy:#06146E; --navy2:#00007A; --orange:#FF7300; --bg:#ffffff; --line:#e5e7eb; --warn:#d97706;
+    --accent: var(--navy);
+  }
+  body{background:#eef0f6; color:var(--ink); font:16px/1.6 "Segoe UI", Arial, sans-serif; margin:0; padding:20px;}
+  .page{max-width:960px; margin:0 auto; background:#fff; padding:0 32px 32px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,.08); overflow:hidden;}
+  h1,h2,h3{color:var(--navy); margin:10px 0;}
+  h4{color:var(--ink); margin:14px 0 6px;}
+  code, pre{background:#f3f4f6; padding:6px 8px; border-radius:6px; font-family: ui-monospace, Consolas, monospace;}
+  pre{padding:14px; overflow-x:auto; min-height:40px; line-height:1.5; font-size:14.5px;}
+  .def-box{border-left:4px solid var(--navy); background:#f0f3fb; padding:10px 14px; margin:12px 0;}
+  .task{border:1px solid var(--line); padding:14px; border-radius:10px; margin:16px 0; background:#fafafa;}
+  .answer{border:1px dashed var(--muted); padding:10px; margin:10px 0; min-height:60px; outline:none; background:#fff; border-radius:6px;}
+  .answer:focus{border-color:var(--navy); box-shadow:0 0 0 3px rgba(6,20,110,.12);}
+  .answer:empty:before{content:attr(data-placeholder); color:#9ca3af; font-style:italic;}
+  .editable {min-height:60px;}
+  table{width:100%; border-collapse:collapse; margin:12px 0;}
+  th,td{border:1px solid var(--line); padding:8px; text-align:left; vertical-align:top;}
+  th{background:#f3f4f8;}
+  .row {display:flex; gap:12px; flex-wrap:wrap;}
+  .col {flex:1 1 320px;}
+  .small{font-size:0.9rem; color:var(--muted);}
+  .fault{color:#b91c1c; font-weight:700;}
+  .newtag{display:inline-block; background:var(--orange); color:#fff; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:999px; vertical-align:middle; margin-left:8px;}
+  .toolbar{position:sticky; top:0; background:#fff; padding:10px 0; text-align:right; z-index:5;}
+  .btn{background:var(--navy); color:#fff; border:none; padding:8px 16px; border-radius:8px; font-size:14px; cursor:pointer;}
+  .btn:hover{opacity:.9;}
+  .vmodel{display:flex; justify-content:center; margin:18px 0;}
+  .vmodel svg{max-width:100%; height:auto;}
+
+  /* ---------- SLIIT letterhead ---------- */
+  .letterhead{margin:0 -32px 18px; padding:22px 32px 0;}
+  .letterhead-top{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:nowrap;}
+  .brand-block{display:flex; align-items:center; gap:20px; flex:1 1 auto; min-width:0;}
+  .crest{height:78px; width:auto; flex-shrink:0;}
+  .title-left{padding-left:2px; min-width:0;}
+  .right-block{flex-shrink:0;}
+  .fac-block{text-align:right;}
+  .fac-text{color:var(--navy); font-weight:800; font-size:1.05rem; letter-spacing:.2px;}
+  .stripes{display:flex; justify-content:flex-end; gap:5px; margin-top:6px;}
+  .stripes span{display:inline-block; width:14px; height:20px; background:var(--navy); transform:skew(-18deg);}
+  .stripes span:nth-child(2){background:var(--orange);}
+  .letterhead-rule{height:3px; background:var(--navy); margin-top:16px; border-radius:2px;}
+  .right-block{display:flex; flex-direction:column; align-items:flex-end; gap:10px;}
+  .title-left .module-line{color:var(--navy); font-weight:800; font-size:1.15rem;}
+  .title-left .program-line{color:var(--navy); font-size:0.98rem; margin-top:2px;}
+  .title-left .year-line{color:var(--navy); font-size:0.9rem; opacity:.85; margin-top:2px;}
+  .labsheet-tag{background:var(--navy); color:#fff; border-radius:999px; padding:8px 24px; text-align:center; min-width:150px;}
+  .labsheet-tag .labsheet-label{font-size:0.72rem; font-weight:700; letter-spacing:1.5px;}
+  .labsheet-tag .labsheet-num{font-size:1.4rem; font-weight:800; line-height:1.1;}
+
+  .letterhead-footer{margin:28px -32px 0; padding:14px 32px 22px;}
+  .footer-rule{height:2px; background:var(--navy); margin-bottom:10px;}
+  .footer-row{display:flex; align-items:center; gap:10px;}
+  .crest-small{height:30px; width:auto;}
+  .footer-text{color:var(--navy); font-weight:800; letter-spacing:.5px; font-size:0.95rem;}
+
+  /* Rubric Specific Styling */
+  .rubric-table th, .rubric-table td { font-size: 0.85rem; padding: 6px; }
+  .rubric-table th { text-align: center; background: #eef2ff; color: var(--navy); }
+  .rubric-table td { text-align: center; }
+  .rubric-table td:first-child { text-align: left; font-weight: bold; background: #f8fafc; }
+  .marks-col { width: 60px; font-weight: bold; background: #fffbeb !important; border: 2px solid var(--orange) !important;}
+
+  @media print{ .toolbar{display:none;} body{background:#fff; padding:0;} .page{box-shadow:none; padding:0 32px 32px; border-radius:0;} .answer:empty:before{content:"";} }
+</style>
+<style>
+  .figure{margin:14px 0 4px; text-align:center;}
+  .figure img{max-width:520px; width:100%; height:auto; border:1px solid var(--line); border-radius:6px;}
+  .figure figcaption{font-size:0.85rem; color:var(--muted); margin-top:6px; font-style:italic;}
+  .marks{display:inline-block; background:var(--navy); color:#fff; font-size:0.72rem; font-weight:700;
+         padding:2px 10px; border-radius:999px; vertical-align:middle; margin-left:8px;}
+
+  /* Question cards */
+  .q-card{border:1px solid var(--line); border-left:4px solid var(--orange); border-radius:10px;
+          padding:16px 18px; margin:18px 0; background:#fff;}
+  .q-head{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:6px;}
+  .q-title{font-weight:800; color:var(--navy); font-size:1.06rem;}
+  .pts{background:var(--navy); color:#fff; border-radius:999px; padding:3px 12px; font-size:0.8rem; font-weight:700; white-space:nowrap;}
+  .note{border-left:4px solid var(--navy); border-radius:6px; padding:10px 14px; margin:12px 0; font-size:0.95rem; background:#f0f3fb;}
+  .note.warn{border-color:var(--warn); background:#fff7e6;}
+  .note.ok{border-color:#15803d; background:#eafaf0;}
+  .note.stop{border-color:#b91c1c; background:#fdecec;}
+  .checklist{list-style:none; padding:0; margin:8px 0;}
+  .checklist li{padding:6px 0; border-bottom:1px solid var(--line); display:flex; gap:10px; align-items:flex-start;}
+  .checklist li:last-child{border-bottom:none;}
+  .cb{width:16px; height:16px; border:2px solid var(--navy); border-radius:4px; flex-shrink:0; margin-top:3px; display:inline-block;}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="toolbar"><button class="btn" onclick="window.print()">Print / Save as PDF</button></div>
+
+  <header class="letterhead">
+    <div class="letterhead-top">
+      <div class="brand-block">
+        <img class="crest" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOYAAAEYCAYAAABIhYpmAABfgklEQVR4nO2dd5gcxdHGf9Wz4ZJyzoByQBGQEEHkbHIwGZNswCY6EgwYnD4yBhuTjAzYJhswUeScJBEkEIggoSyUpUu7O1PfHzOzO3u3FyTtaldo3ufZuw0z3T3d/XZXV1VXi6oqIUKEKCmYYhcgRIgQjRESM0SIEkRIzBAhShAhMUOEKEGExAwRogQREjNEiBJESMwQIUoQITFDhChBhMQMEaIEERIzRIgSREjMECFKECExQ4QoQYTEDBGiBBESM0SIEsT/A6SqQYFAWMGAAAAAAElFTkSuQmCC" alt="SLIIT crest" />
+        <div class="title-left">
+          <div class="program-line">BSc (Hons) in <b>Computer Science</b></div>
+          <div class="module-line">SE3062 : Intelligent Systems</div>
+          <div class="year-line">Year 3 &middot; 2026 &middot; Lecturer: Mr. Jeewaka Perera</div>
+        </div>
+      </div>
+      <div class="right-block">
+        <div class="fac-block">
+          <div class="fac-text">Faculty of Computing</div>
+          <div class="stripes"><span></span><span></span><span></span></div>
+        </div>
+        <div class="labsheet-tag">
+          <div class="labsheet-label">Group Assignment</div>
+        </div>
+      </div>
+    </div>
+    <div class="letterhead-rule"></div>
+  </header>
+
+<h1>Search Algorithms in Pac-Man</h1>
+
+<div class="def-box">
+  <b>Objective:</b> Implement the classic uninformed and informed search algorithms &mdash; DFS, BFS,
+  Uniform Cost Search and A* &mdash; and design admissible, consistent heuristics for two structured
+  problems (finding all corners, and eating all the food dots). 
+</div>
+
+<p><b>This is a Group assignment for a group of 4 members.</b> Students must use the existing teams they have. Each group must complete the tasks together, and <b>everyone in the group must have a complete understanding of the entire solution</b>. You will be evaluated individually on your overall comprehension of the group's work, as well as your individual version control contributions.</p>
+<p><b>Download link:</b> <a href="https://inst.eecs.berkeley.edu/~cs188/sp26/assets/projects/search.zip" target="_blank">search.zip</a>.</p>
+
+<h3>Marking Scheme (Total: 100 Marks &mdash; 10% of Final Grade)</h3>
+<p>The total assignment is graded out of 100 marks, broken down into four components:</p>
+<ul>
+    <li><b>Autograder Score (40 Marks):</b> Group marks based on the autograder output for Q1-Q7.</li>
+    <li><b>Group Report (10 Marks):</b> Graded on structure, formatting, clarity, and completeness of the requirements.</li>
+    <li><b>Individual Git Contribution (10 Marks):</b> Assessed via report screenshots and repository verification.</li>
+    <li><b>Individual Viva Evaluation (40 Marks):</b> A rapid-fire individual assessment of your understanding of the code and algorithms. (Split into 20 marks for Algorithm Knowledge and 20 marks for Code Comprehension).</li>
+</ul>
+
+<h4>Autograder Allocation (40 Marks)</h4>
+<table>
+  <tr><th style="width:54%">Question</th><th style="width:26%">Autograder</th><th style="width:20%">Marks</th></tr>
+  <tr><td>Q1 &mdash; Depth First Search</td><td><code>q1</code></td><td>4</td></tr>
+  <tr><td>Q2 &mdash; Breadth First Search</td><td><code>q2</code></td><td>4</td></tr>
+  <tr><td>Q3 &mdash; Uniform Cost Search (varying the cost function)</td><td><code>q3</code></td><td>4</td></tr>
+  <tr><td>Q4 &mdash; A* Search</td><td><code>q4</code></td><td>4</td></tr>
+  <tr><td>Q5 &mdash; Finding All the Corners (problem representation)</td><td><code>q5</code></td><td>8</td></tr>
+  <tr><td>Q6 &mdash; Corners Problem: Heuristic</td><td><code>q6</code></td><td>8</td></tr>
+  <tr><td>Q7 &mdash; Eating All The Dots: Food Heuristic</td><td><code>q7</code></td><td>8</td></tr>
+  <tr><th>Total</th><th></th><th>40</th></tr>
+</table>
+
+<h2>Part 1 &mdash; Project Setup</h2>
+
+<div class="task">
+  <h3>Section 1: Download &amp; File Structure</h3>
+
+  <p><b>1.</b> Download <code>search.zip</code>, extract it, and open a terminal in the extracted
+  <code>search</code> folder.</p>
+  <p><b>2.</b> Confirm the folder contains <code>search.py</code>, <code>searchAgents.py</code>,
+  <code>pacman.py</code>, <code>util.py</code> and <code>autograder.py</code>.</p>
+
+  <h4>Project structure</h4>
+  <table>
+    <tr><th style="width:26%">File</th><th style="width:20%">Your role</th><th>Description</th></tr>
+    <tr><td><code>search.py</code></td><td><b>Edit</b></td><td>Where your search algorithms (DFS, BFS, UCS, A*) live &mdash; Q1&ndash;Q4.</td></tr>
+    <tr><td><code>searchAgents.py</code></td><td><b>Edit</b></td><td>Where search-based agents and problems are defined &mdash; Q5&ndash;Q7 (CornersProblem, heuristics).</td></tr>
+    <tr><td><code>util.py</code></td><td>Read only</td><td>Provides <code>Stack</code>, <code>Queue</code> and <code>PriorityQueue</code>. You must use these, not Python built-ins.</td></tr>
+    <tr><td><code>pacman.py</code></td><td>Reference</td><td>Runs the game; describes the <code>GameState</code> type.</td></tr>
+    <tr><td><code>game.py</code></td><td>Reference</td><td>Game logic &mdash; <code>AgentState</code>, <code>Agent</code>, <code>Directions</code>, <code>Grid</code>.</td></tr>
+    <tr><td><code>autograder.py</code></td><td>Run</td><td>Automated testing / grading script.</td></tr>
+    <tr><td><code>test_cases/</code></td><td>Auto-used</td><td>Contains the test cases for each question.</td></tr>
+  </table>
+
+  <div class="note stop">
+    <b>Critical:</b> Do <b>not</b> rename files, functions or classes. The autograder imports them by
+    name; a rename means zero marks for that question.
+  </div>
+</div>
+
+<div class="task">
+  <h3>Section 2: Environment &amp; Verification</h3>
+
+  <div class="def-box">
+    <b>Requirements:</b> Python <b>3.9&nbsp;&ndash;&nbsp;3.11</b> &nbsp;|&nbsp; package manager Pip or Conda.
+  </div>
+
+  <p>Create a new Conda environment and install the required packages:</p>
+<pre>conda create -n cs188 python=3.11
+conda activate cs188
+pip install numpy matplotlib</pre>
+
+  <p><b>Verify the setup</b> by playing a game of Pac-Man from inside the <code>search</code> folder:</p>
+<pre>python pacman.py</pre>
+  <div class="note ok"><b>Success:</b> a Pac-Man game window opens and is playable with the arrow keys.</div>
+</div>
+
+<div class="def-box">
+  <b>How search works here.</b> Every algorithm follows the same <b>graph-search</b> skeleton; only
+  the fringe changes.
+  <ol style="margin:6px 0 0;">
+    <li>Put the start state on the fringe.</li>
+    <li>Pop a node from the fringe. If its state is the goal, return the path of actions that reached it.</li>
+    <li>If its state has not been expanded before, mark it expanded and push each successor
+        (with the extended path, and accumulated cost where relevant) onto the fringe.</li>
+    <li>Repeat until the goal is found or the fringe is empty (return failure).</li>
+  </ol>
+  <span class="small">DFS &rarr; <code>util.Stack</code> (LIFO) &nbsp;|&nbsp; BFS &rarr;
+  <code>util.Queue</code> (FIFO) &nbsp;|&nbsp; UCS &amp; A* &rarr; <code>util.PriorityQueue</code>
+  (priority = <i>g</i> for UCS, <i>g&nbsp;+&nbsp;h</i> for A*).</span>
+</div>
+
+<h2>Part 2 &mdash; Questions</h2>
+
+<!-- Q1 -->
+<div class="q-card">
+  <div class="q-head">
+    <span class="q-title">Q1 &mdash; Finding a Fixed Food Dot using Depth First Search</span>
+    <span class="pts">4 marks &middot; autograder q1</span>
+  </div>
+  <p>Implement the <code>depthFirstSearch</code> function in <code>search.py</code>. It must be the
+  <b>graph-search</b> version: track expanded states so the same state is never expanded twice.</p>
+
+  <h4>Autograder</h4>
+<pre>python autograder.py -q q1</pre>
+</div>
+
+<!-- Q2 -->
+<div class="q-card">
+  <div class="q-head">
+    <span class="q-title">Q2 &mdash; Breadth First Search</span>
+    <span class="pts">4 marks &middot; autograder q2</span>
+  </div>
+  <p>Implement <code>breadthFirstSearch</code> in <code>search.py</code>, again as graph search. The
+  logic is almost identical to DFS &mdash; only the fringe changes.</p>
+
+  <h4>Autograder</h4>
+<pre>python autograder.py -q q2</pre>
+</div>
+
+<!-- Q3 -->
+<div class="q-card">
+  <div class="q-head">
+    <span class="q-title">Q3 &mdash; Uniform Cost Search (Varying the Cost Function)</span>
+    <span class="pts">4 marks &middot; autograder q3</span>
+  </div>
+  <p>Implement <code>uniformCostSearch</code> in <code>search.py</code>. UCS generalises BFS by using
+  the <b>actual accumulated path cost</b>, not the number of steps.</p>
+
+  <h4>Autograder</h4>
+<pre>python autograder.py -q q3</pre>
+</div>
+
+<!-- Q4 -->
+<div class="q-card">
+  <div class="q-head">
+    <span class="q-title">Q4 &mdash; A* Search</span>
+    <span class="pts">4 marks &middot; autograder q4</span>
+  </div>
+  <p>Implement <code>aStarSearch</code> in <code>search.py</code>. It takes a <code>heuristic</code>
+  argument &mdash; a function <code>heuristic(state, problem)</code> that estimates the remaining cost
+  to a goal. The default is <code>nullHeuristic</code> (always 0), which makes A* degenerate to UCS.</p>
+
+  <h4>Autograder</h4>
+<pre>python autograder.py -q q4</pre>
+</div>
+
+<!-- Q5 -->
+<div class="q-card">
+  <div class="q-head">
+    <span class="q-title">Q5 &mdash; Finding All the Corners (Problem Representation)</span>
+    <span class="pts">8 marks &middot; autograder q5</span>
+  </div>
+  <p>Implement the <code>CornersProblem</code> class in <code>searchAgents.py</code>. The goal is a
+  path that touches <b>all four corners</b> of the maze. You must fill in <code>getStartState</code>, <code>isGoalState</code>, <code>getSuccessors</code>
+  and successor bookkeeping.</p>
+  <p>Keep the state small and <b>hashable</b> so the expanded-set check works. Do not store the wall grid or the whole <code>GameState</code> in the state.</p>
+
+  <h4>Autograder</h4>
+<pre>python autograder.py -q q5</pre>
+</div>
+
+<!-- Q6 -->
+<div class="q-card">
+  <div class="q-head">
+    <span class="q-title">Q6 &mdash; Corners Problem: Heuristic</span>
+    <span class="pts">8 marks &middot; autograder q6</span>
+  </div>
+  <p>Implement <code>cornersHeuristic</code> in <code>searchAgents.py</code> for the
+  <code>CornersProblem</code> you built in Q5. It must be <b>admissible</b> and <b>consistent</b>,
+  return <b>0</b> at any goal state, and never return a negative value.</p>
+
+  <h4>Grading (nodes expanded on <code>mediumCorners</code>)</h4>
+  <table>
+    <tr><th>Nodes expanded</th><th>Marks</th></tr>
+    <tr><td>more than 2000</td><td>0 / 8</td></tr>
+    <tr><td>at most 2000</td><td>4 / 8</td></tr>
+    <tr><td>at most 1600</td><td>6 / 8</td></tr>
+    <tr><td>at most 1200</td><td>8 / 8</td></tr>
+  </table>
+  <div class="note stop">
+    <b>Inadmissible = 0 for the question.</b> If the autograder detects that A* with your heuristic
+    returns a non-optimal path on any test, you score 0 regardless of node count.
+  </div>
+
+  <h4>Autograder</h4>
+<pre>python autograder.py -q q6</pre>
+</div>
+
+<!-- Q7 -->
+<div class="q-card">
+  <div class="q-head">
+    <span class="q-title">Q7 &mdash; Eating All The Dots: Food Heuristic</span>
+    <span class="pts">8 marks &middot; autograder q7</span>
+  </div>
+  <p>Implement <code>foodHeuristic</code> in <code>searchAgents.py</code> for the
+  <code>FoodSearchProblem</code> (already provided). Your heuristic must be <b>admissible</b> and <b>consistent</b>.</p>
+
+  <h4>Grading (nodes expanded on <code>trickySearch</code>)</h4>
+  <table>
+    <tr><th>Nodes expanded</th><th>Marks</th></tr>
+    <tr><td>more than 15000</td><td>2 / 8</td></tr>
+    <tr><td>at most 15000</td><td>4 / 8</td></tr>
+    <tr><td>at most 12000</td><td>6 / 8</td></tr>
+    <tr><td>at most 9000</td><td>8 / 8</td></tr>
+  </table>
+
+  <h4>Autograder</h4>
+<pre>python autograder.py -q q7</pre>
+</div>
+
+<h2>Part 3 &mdash; Report, Git &amp; Submission</h2>
+
+<div class="task">
+  <p>Your group must submit a short PDF report alongside your code. The report contributes <b>10 marks</b> and must include the following for <b>each question (Q1-Q7)</b>:</p>
+  <ul>
+    <li>The specific functions/code blocks your group edited or added.</li>
+    <li>A clear screenshot of the autograder output proving the score for that question.</li>
+    <li>A concise explanation (<b>Max 200 words per question</b>) detailing the logic, data structures, and heuristic design used.</li>
+  </ul>
+  
+  <p><b>Additionally, the end of the report MUST contain:</b></p>
+  <ol>
+      <li><b>Public Git Repository Link:</b> The URL to your group's public Git repository used to collaborate on this assignment.</li>
+      <li><b>Git Contribution Evidence:</b> Clear screenshots of your commit history and contribution graphs showing proper commit frequency, meaningful commit messages, and active contribution from <i>each</i> member throughout the assignment lifecycle.</li>
+      <li><b>Individual Contribution Table:</b> Clearly listing the names, student IDs, and specific tasks/questions each member contributed to.</li>
+      <li><b>AI Usage Declaration:</b> If any AI tools (e.g., ChatGPT, Gemini) were used for understanding the problem or generating ideas/code, explicitly state the tool used and include the exact prompts. If no AI was used, state "No AI tools were utilized."</li>
+  </ol>
+  
+  <p><b>Submission Format:</b> You must submit TWO separate items to the course portal:</p>
+  <ol>
+      <li><b>Report:</b> Submit your <code>Report.pdf</code> as a standalone file. Name it after your Group ID (e.g., <code>Group_15_Report.pdf</code>).</li>
+      <li><b>Code:</b> Put <b>ONLY</b> the two edited files (<code>search.py</code> and <code>searchAgents.py</code>) into a single ZIP file. Name the ZIP file after your Group ID (e.g., <code>Group_15_Code.zip</code>).</li>
+  </ol>
+  <p>Only ONE submission of these two items is required per group.</p>
+</div>
+
+<h2>Part 4 &mdash; Individual Git Contribution &amp; Viva Evaluation (50 Marks)</h2>
+<div class="task">
+  <p>Each student will be evaluated individually during a strict <b>6-minute Viva session per team</b>. This fast-paced session assesses your verifiable Git practices (10 Marks) and your immediate understanding of the group's code and core algorithms (40 Marks). <b>You are expected to understand the entire solution, not just the parts you wrote.</b></p>
+  
+  <p>Instructors will use the following quick-reference rubric to rapidly score students out of 50:</p>
+  
+  <table class="rubric-table">
+    <tr>
+        <th style="width:14%">Criteria (Marks)</th>
+        <th style="width:13%">Excellent</th>
+        <th style="width:13%">Good</th>
+        <th style="width:13%">Above Average</th>
+        <th style="width:13%">Average</th>
+        <th style="width:13%">Below Average</th>
+        <th style="width:13%">Failed</th>
+        <th class="marks-col">Marks</th>
+    </tr>
+    <tr>
+        <td><b>1. Git Contribution &amp; Version Control</b><br><span class="small">(Max 10 Marks)</span></td>
+        <td><b>[9 - 10]</b> Frequent, meaningful commits across timeline. Descriptive messages. Clear collaborative evidence.</td>
+        <td><b>[7 - 8]</b> Regular commits, mostly clear messages. Minor clustering or gaps. Good work distribution.</td>
+        <td><b>[6]</b> Somewhat infrequent commits. Vague messages. Shows basic usage but lacks consistency.</td>
+        <td><b>[4 - 5]</b> Few commits, dumped in large chunks. Poor or meaningless messages.</td>
+        <td><b>[2 - 3]</b> 1-2 commits total. No descriptive messages. Minimal evidence.</td>
+        <td><b>[0 - 1]</b> No Git evidence included or clear free-rider situation.</td>
+        <td class="marks-col"></td>
+    </tr>
+    <tr>
+        <td><b>2. Viva: Core Algorithm Knowledge</b><br><span class="small">(Max 20 Marks)</span></td>
+        <td><b>[18 - 20]</b> Flawless, instant explanation of DFS/BFS/UCS/A* concepts, fringe mechanics, and optimality.</td>
+        <td><b>[15 - 17]</b> Confident explanation with minor hesitations. Solid grasp of core search mechanics.</td>
+        <td><b>[12 - 14]</b> Good general understanding, but struggles slightly with A* nuances or optimality conditions.</td>
+        <td><b>[8 - 11]</b> Can explain basic DFS/BFS but confused about UCS/A* or cost functions.</td>
+        <td><b>[4 - 7]</b> Very vague. Cannot articulate how search algorithms operate beyond simple definitions.</td>
+        <td><b>[0 - 3]</b> Completely incorrect answers or silence. Cannot explain basic concepts.</td>
+        <td class="marks-col"></td>
+    </tr>
+    <tr>
+        <td><b>3. Viva: Code Comprehension &amp; Defense</b><br><span class="small">(Max 20 Marks)</span></td>
+        <td><b>[18 - 20]</b> Deep mastery of code. Immediately points out how specific code handles states/heuristics. Mathematically defends admissibility.</td>
+        <td><b>[15 - 17]</b> Solid understanding of the group's codebase. Defends heuristics well, minor prompting needed.</td>
+        <td><b>[12 - 14]</b> Understands most code flow, but struggles to explain edge cases or mathematical proofs of heuristics.</td>
+        <td><b>[8 - 11]</b> Only knows specific contributed portion. Struggles to explain overall state representation or other members' code.</td>
+        <td><b>[4 - 7]</b> Guesses answers. Cannot map theoretical concepts to the actual Python implementation.</td>
+        <td><b>[0 - 3]</b> Unable to identify basic components of the submitted code.</td>
+        <td class="marks-col"></td>
+    </tr>
+  </table>
+  
+  <p style="text-align: right; font-weight: bold; margin-top: 10px;">Total Individual Score: ______ / 50</p>
+</div>
+
+<footer class="letterhead-footer">
+    <div class="footer-rule"></div>
+    <div class="footer-row">
+            <img class="crest-small" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOYAAAEYCAYAAABIhYpmAABfgklEQVR4nO2dd5gcxdHGf9Wz4ZJyzoByQBGQEEHkbHIwGZNswCY6EgwYnD4yBhuTjAzYJhswUeScJBEkEIggoSyUpUu7O1PfHzOzO3u3FyTtaldo3ufZuw0z3T3d/XZXV1VXi6oqIUKEKCmYYhcgRIgQjRESM0SIEkRIzBAhShAhMUOEKEGExAwRogQREjNEiBJESMwQIUoQITFDhChBhMQMEaIEERIzRIgSREjMECFKECExQ4QoQYTEDBGiBBESM0SIEsT/A6SqQYFAWMGAAAAAAElFTkSuQmCC" alt="SLIIT crest" />
+      <span class="footer-text">FACULTY OF COMPUTING</span>
+    </div>
+</footer>
+
+</div>
+</body>
+</html>
