@@ -295,15 +295,16 @@ class CornersProblem(search.SearchProblem):
         Returns the start state (in your state space, not the full Pacman state
         space)
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # State = (position, visitedCorners); visitedCorners is a tuple of 4
+        # booleans aligned with self.corners. Small and hashable, no walls stored.
+        visited = tuple(corner == self.startingPosition for corner in self.corners)
+        return (self.startingPosition, visited)
 
     def isGoalState(self, state: Any):
         """
         Returns whether this search state is a goal state of the problem.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return all(state[1])                       # every corner visited
 
     def getSuccessors(self, state: Any):
         """
@@ -325,7 +326,15 @@ class CornersProblem(search.SearchProblem):
             #   nextx, nexty = int(x + dx), int(y + dy)
             #   hitsWall = self.walls[nextx][nexty]
 
-            "*** YOUR CODE HERE ***"
+            position, visited = state
+            x, y = position
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            if not self.walls[nextx][nexty]:
+                nextPos = (nextx, nexty)
+                nextVisited = tuple(v or corner == nextPos
+                                    for v, corner in zip(visited, self.corners))
+                successors.append(((nextPos, nextVisited), action, 1))
 
         self._expanded += 1 # DO NOT CHANGE
         return successors
@@ -360,8 +369,48 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
     corners = problem.corners # These are the corner coordinates
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
-    "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+    # Assumes the CornersProblem state is (position, visitedCorners), where
+    # visitedCorners is a tuple of 4 booleans aligned with problem.corners.
+    position, visitedCorners = state
+    unvisited = [i for i in range(len(corners)) if not visitedCorners[i]]
+    if not unvisited:
+        return 0                                   # goal state -> 0
+
+    # Maze distances (BFS around walls) from each corner, computed once and
+    # cached. Distance is symmetric, so these also give position -> corner.
+    info = problem.heuristicInfo if hasattr(problem, 'heuristicInfo') else None
+    if info is None:
+        info = problem.heuristicInfo = {}
+    if 'cornerDist' not in info:
+        distMaps = []
+        for corner in corners:
+            dist = {corner: 0}
+            queue = util.Queue()
+            queue.push(corner)
+            while not queue.isEmpty():
+                x, y = queue.pop()
+                for dx, dy in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+                    nxt = (x + dx, y + dy)
+                    if nxt not in dist and not walls[nxt[0]][nxt[1]]:
+                        dist[nxt] = dist[(x, y)] + 1
+                        queue.push(nxt)
+            distMaps.append(dist)
+        info['cornerDist'] = distMaps
+    distMaps = info['cornerDist']
+
+    # Cheapest way to visit every unvisited corner = best of all visiting
+    # orders (at most 4! = 24), each costed with true maze distances. Any real
+    # solution must visit them in some order, so this never overestimates.
+    from itertools import permutations
+    best = None
+    for order in permutations(unvisited):
+        cost = distMaps[order[0]][position]
+        for a, b in zip(order, order[1:]):
+            cost += distMaps[a][corners[b]]
+        if best is None or cost < best:
+            best = cost
+    return best
+
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
