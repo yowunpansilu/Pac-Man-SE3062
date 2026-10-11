@@ -110,3 +110,40 @@ depends on exactly this format. If the Q5 state ever changed, Q6 would have to c
 - `8c3edb3` Q5: define CornersProblem state (position, visited-corner flags) in getStartState
 - `c55af1b` Q5: implement isGoalState for corners
 - `ba8b79f` Q5: implement getSuccessors with visited-corner bookkeeping
+
+---
+
+## Viva preparation (Q4 and Q5)
+
+Short answers I practised for the viva.
+
+**Why is the goal test done when a node is popped and not when it is pushed?**
+A node is pushed as soon as it is discovered, but a cheaper path to the same goal may be found
+later. Only when the node comes off the priority queue do we know nothing cheaper is left.
+
+**What happens to A* with `nullHeuristic`?**
+h = 0, so f = g and A* expands nodes in exactly the same order as UCS.
+
+**What is the difference between admissible and consistent?**
+Admissible: h(n) never overestimates the true remaining cost. Consistent: for every step,
+h(s) ≤ cost(s, s′) + h(s′). Consistency is stronger: it implies admissibility (when h(goal) = 0),
+and it makes graph search safe, because a state's first pop is always its cheapest.
+
+**Why is the Manhattan heuristic admissible in a maze?**
+Pacman moves one square per step and walls can only make the route longer, so the real distance
+is never less than |x₁ − x₂| + |y₁ − y₂|.
+
+**Why not store the whole `GameState` in the corners state?**
+It is large, slow to copy and hash, and it would make two states that differ only in irrelevant
+details (like the score) look different. The search only needs the position and the four flags.
+
+**Why tuples instead of a list for the visited flags?**
+Lists cannot be hashed, so the state could not go in the expanded set or a dictionary.
+
+**How many states can the corners problem have?**
+At most (open squares × 16), because each of the four corners is either visited or not.
+mediumCorners has 3,032 reachable states.
+
+**Why does BFS solve Q5 optimally without a heuristic?**
+Every step costs 1, so the first goal state BFS reaches uses the fewest steps. A* with
+`cornersHeuristic` finds the same 106-step path while expanding 189 nodes instead of 1,966.
