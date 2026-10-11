@@ -454,8 +454,36 @@ def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
     problem.heuristicInfo['wallCount']
     """
     position, foodGrid = state
-    "*** YOUR CODE HERE ***"
-    return 0
+    foodList = foodGrid.asList()
+    if not foodList:
+        return 0                                   # goal state -> 0
+
+    # Heuristic: true maze distance from Pacman to the FARTHEST remaining dot.
+    # Pacman must at least walk that far to eat that dot, so it never
+    # overestimates (admissible). Maze distances are cached per start square.
+    cache = problem.heuristicInfo.setdefault('mazeDistCache', {})
+
+    def distancesFrom(start):
+        # BFS over non-wall squares; result = {square: shortest walking distance}
+        if start in cache:
+            return cache[start]
+        walls = problem.walls
+        dist = {start: 0}
+        queue = util.Queue()
+        queue.push(start)
+        while not queue.isEmpty():
+            x, y = queue.pop()
+            for dx, dy in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+                nxt = (x + dx, y + dy)
+                if nxt not in dist and not walls[nxt[0]][nxt[1]]:
+                    dist[nxt] = dist[(x, y)] + 1
+                    queue.push(nxt)
+        cache[start] = dist
+        return dist
+
+    dist = distancesFrom(position)
+    return max(dist[food] for food in foodList)
+
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
