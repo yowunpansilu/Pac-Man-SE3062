@@ -5,12 +5,16 @@ failing question cannot hide the result of another, and prints the score for
 each one.
 
 Usage:
-    python run_tests.py
+    python run_tests.py              # Q1-Q7
+    python run_tests.py q4 q5        # only some questions
+    python run_tests.py -v           # also print the output of failed questions
 """
 
+import argparse
 import re
 import subprocess
 import sys
+import time
 
 QUESTIONS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7']
 
@@ -35,11 +39,12 @@ NODES_RES = [
 
 
 def runQuestion(question):
-    """Run the autograder for one question and return its full output."""
+    """Run the autograder for one question; return (output, seconds taken)."""
+    start = time.time()
     result = subprocess.run(
         [sys.executable, 'autograder.py', '-q', question, '--no-graphics'],
         capture_output=True, text=True)
-    return result.stdout + result.stderr
+    return result.stdout + result.stderr, time.time() - start
 
 
 def parseScore(output, question):
@@ -74,35 +79,59 @@ def parseNodes(output, question):
 
 def printSummary(results):
     """Print one row per question and a total line."""
-    print('%-4s %-22s %-7s %-6s %s' % ('Q', 'Problem', 'Score', 'Status', 'Nodes expanded'))
-    print('-' * 64)
+    print('%-4s %-22s %-7s %-6s %-6s %s' % ('Q', 'Problem', 'Score', 'Status', 'Time', 'Nodes expanded'))
+    print('-' * 72)
     totalPoints = totalMax = 0
-    for question, score, nodes in results:
+    for question, score, nodes, seconds in results:
+        timeText = '%.1fs' % seconds
         if score is None:
-            print('%-4s %-22s %-7s %-6s' % (question, TITLES[question], '-', 'ERROR'))
+            print('%-4s %-22s %-7s %-6s %-6s' % (question, TITLES[question], '-', 'ERROR', timeText))
             continue
         points, maxPoints = score
         totalPoints += points
         totalMax += maxPoints
         status = 'PASS' if points >= maxPoints else 'FAIL'
         nodeText = ', '.join(str(n) for n in nodes) if nodes else '-'
-        print('%-4s %-22s %-7s %-6s %s' % (question, TITLES[question],
-                                           '%d/%d' % (points, maxPoints), status, nodeText))
-    print('-' * 64)
+        print('%-4s %-22s %-7s %-6s %-6s %s' % (question, TITLES[question],
+                                                '%d/%d' % (points, maxPoints), status,
+                                                timeText, nodeText))
+    print('-' * 72)
     print('Total: %d/%d' % (totalPoints, totalMax))
 
 
+def parseArgs():
+    parser = argparse.ArgumentParser(description='Run the autograder for Q1-Q7.')
+    parser.add_argument('questions', nargs='*', default=QUESTIONS, metavar='qN',
+                        help='questions to run (default: q1 to q7)')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='print the full autograder output for failed questions')
+    args = parser.parse_args()
+    unknown = [q for q in args.questions if q not in TITLES]
+    if unknown:
+        parser.error('unknown question(s): %s' % ', '.join(unknown))
+    return args
+
+
 def main():
+    args = parseArgs()
     results = []
-    for question in QUESTIONS:
-        output = runQuestion(question)
-        results.append((question, parseScore(output, question), parseNodes(output, question)))
+    failedOutputs = []
+    for question in args.questions:
+        output, seconds = runQuestion(question)
+        score = parseScore(output, question)
+        results.append((question, score, parseNodes(output, question), seconds))
+        if score is None or score[0] < score[1]:
+            failedOutputs.append((question, output))
     printSummary(results)
+
+    if args.verbose:
+        for question, output in failedOutputs:
+            print('\n===== %s output =====' % question)
+            print(output)
 
     # Non-zero exit code if any question did not get full marks, so the
     # script can be used before merging a pull request.
-    allPassed = all(score is not None and score[0] >= score[1] for _, score, _ in results)
-    sys.exit(0 if allPassed else 1)
+    sys.exit(1 if failedOutputs else 0)
 
 
 if __name__ == '__main__':
