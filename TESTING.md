@@ -60,3 +60,57 @@ python run_tests.py          # Q1 to Q7
 python run_tests.py q4 q5    # only some questions
 python run_tests.py -v       # show the full output of failed questions
 ```
+
+## 4. Exhaustive heuristic check
+
+The autograder only checks a few states for each heuristic. A* is guaranteed to be optimal only
+if the heuristic is admissible and consistent in **every** state, so `check_heuristics.py`
+visits every reachable state of four small layouts and checks, for each state *s* and successor
+*s′*:
+
+- h(s) ≥ 0 (never negative)
+- h(goal) = 0
+- h(s) ≤ cost(s, s′) + h(s′) (consistent)
+
+Consistency plus h(goal) = 0 means the heuristic is also admissible. The script also compares
+h(start) with the optimal cost found by UCS.
+
+```bash
+python check_heuristics.py
+```
+
+| Heuristic | Layout | States checked | h(start) | Optimal cost | Result |
+|---|---|---|---|---|---|
+| Q6 cornersHeuristic | tinyCorners | 384 | 28 | 28 | OK |
+| Q6 cornersHeuristic | mediumCorners | 3,032 | 106 | 106 | OK |
+| Q7 foodHeuristic | testSearch | 24 | 7 | 7 | OK |
+| Q7 foodHeuristic | tinySearch | 8,100 | 23 | 27 | OK |
+
+No violations were found. Two things stand out:
+
+- **Q6 is exact.** On both layouts h(start) equals the optimal cost. This is expected: the
+  heuristic takes the cheapest order of the remaining corners using true maze distances, which is
+  exactly the remaining cost of the corners problem. That is why A* expands only 189 nodes.
+- **Q7 is a strict lower bound.** On tinySearch it estimates 23 against a true cost of 27. The
+  nearest-food distance plus the spanning-tree cost never overestimates, because a real route must
+  reach some food and then connect every food square.
+
+To confirm the checker really catches mistakes, I ran it once with a deliberately bad heuristic
+(50 everywhere except the goal). It reported 6 consistency violations on tinyCorners, as expected.
+
+## 5. Heuristics against blind search
+
+The same layouts with and without a heuristic, using `python pacman.py ... -q`. Each pair finds
+the same optimal path cost, so the drop in nodes expanded comes from the heuristic alone.
+
+| Layout | Without heuristic | Nodes | With heuristic | Nodes | Fewer nodes |
+|---|---|---|---|---|---|
+| bigMaze (cost 210) | UCS | 620 | A* + Manhattan | 549 | 11% |
+| mediumCorners (cost 106) | BFS | 1,966 | A* + cornersHeuristic | 189 | 90% |
+| trickySearch (cost 60) | UCS | 16,688 | A* + foodHeuristic | 255 | 98% |
+
+## 6. Conclusion
+
+The merged code passes every autograder test for Q1 to Q7, and both heuristics hold up in every
+reachable state of the checked layouts, not just at the start states the autograder samples. No
+fixes were needed after the merge.
