@@ -507,9 +507,8 @@ def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
     if not foodList:
         return 0                                   # goal state -> 0
 
-    # Heuristic: true maze distance from Pacman to the FARTHEST remaining dot.
-    # Pacman must at least walk that far to eat that dot, so it never
-    # overestimates (admissible). Maze distances are cached per start square.
+    # Reaching the nearest food and connecting all remaining food gives a
+    # lower bound on a complete route. Use maze distances for both costs.
     cache = problem.heuristicInfo.setdefault('mazeDistCache', {})
 
     def distancesFrom(start):
@@ -530,8 +529,27 @@ def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
         cache[start] = dist
         return dist
 
-    dist = distancesFrom(position)
-    return max(dist[food] for food in foodList)
+    # Distances are symmetric: cache maps from food squares so moving Pacman
+    # does not require another BFS for each new position.
+    nearestFood = min(distancesFrom(food)[position] for food in foodList)
+
+    # Prim's algorithm builds a minimum spanning tree over the remaining food.
+    # Its cost depends only on the food set, so reuse it across positions.
+    treeCache = problem.heuristicInfo.setdefault('foodMSTCache', {})
+    foodKey = frozenset(foodList)
+    if foodKey not in treeCache:
+        root = foodList[0]
+        cheapest = {food: distancesFrom(root)[food] for food in foodList[1:]}
+        treeCost = 0
+        while cheapest:
+            nextFood = min(cheapest, key=cheapest.get)
+            treeCost += cheapest.pop(nextFood)
+            distances = distancesFrom(nextFood)
+            for food in cheapest:
+                cheapest[food] = min(cheapest[food], distances[food])
+        treeCache[foodKey] = treeCost
+
+    return nearestFood + treeCache[foodKey]
 
 
 class ClosestDotSearchAgent(SearchAgent):
