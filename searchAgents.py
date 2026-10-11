@@ -34,10 +34,11 @@ description for details.
 Good luck and happy searching!
 """
 
-from typing import List, Tuple, Any
+from typing import Tuple, Any
 from game import Directions
 from game import Agent
 from game import Actions
+from game import Grid
 import util
 import time
 import search
@@ -318,6 +319,7 @@ class CornersProblem(search.SearchProblem):
         """
 
         successors = []
+        position, visited = state
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             # Add a successor state to the successor list if the action is legal
             # Here's a code snippet for figuring out whether a new position hits a wall:
@@ -326,7 +328,6 @@ class CornersProblem(search.SearchProblem):
             #   nextx, nexty = int(x + dx), int(y + dy)
             #   hitsWall = self.walls[nextx][nexty]
 
-            position, visited = state
             x, y = position
             dx, dy = Actions.directionToVector(action)
             nextx, nexty = int(x + dx), int(y + dy)
@@ -391,7 +392,8 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
                 x, y = queue.pop()
                 for dx, dy in ((0, 1), (0, -1), (1, 0), (-1, 0)):
                     nxt = (x + dx, y + dy)
-                    if nxt not in dist and not walls[nxt[0]][nxt[1]]:
+                    if (0 <= nxt[0] < walls.width and 0 <= nxt[1] < walls.height
+                            and nxt not in dist and not walls[nxt[0]][nxt[1]]):
                         dist[nxt] = dist[(x, y)] + 1
                         queue.push(nxt)
             distMaps.append(dist)
@@ -413,7 +415,7 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
 
 
 class AStarCornersAgent(SearchAgent):
-    "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
+    "A SearchAgent for CornersProblem using A* and cornersHeuristic."
     def __init__(self):
         self.searchFunction = lambda prob: search.aStarSearch(prob, cornersHeuristic)
         self.searchType = CornersProblem
@@ -474,7 +476,7 @@ class AStarFoodSearchAgent(SearchAgent):
         self.searchFunction = lambda prob: search.aStarSearch(prob, foodHeuristic)
         self.searchType = FoodSearchProblem
 
-def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
+def foodHeuristic(state: Tuple[Tuple[int, int], Grid], problem: FoodSearchProblem):
     """
     Your heuristic for the FoodSearchProblem goes here.
 
@@ -523,7 +525,8 @@ def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
             x, y = queue.pop()
             for dx, dy in ((0, 1), (0, -1), (1, 0), (-1, 0)):
                 nxt = (x + dx, y + dy)
-                if nxt not in dist and not walls[nxt[0]][nxt[1]]:
+                if (0 <= nxt[0] < walls.width and 0 <= nxt[1] < walls.height
+                        and nxt not in dist and not walls[nxt[0]][nxt[1]]):
                     dist[nxt] = dist[(x, y)] + 1
                     queue.push(nxt)
         cache[start] = dist
@@ -574,10 +577,6 @@ class ClosestDotSearchAgent(SearchAgent):
         Returns a path (a list of actions) to the closest dot, starting from
         gameState.
         """
-        # Here are some useful elements of the startState
-        startPosition = gameState.getPacmanPosition()
-        food = gameState.getFood()
-        walls = gameState.getWalls()
         problem = AnyFoodSearchProblem(gameState)
 
         return search.bfs(problem)
