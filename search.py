@@ -144,7 +144,17 @@ def nullHeuristic(state, problem=None):
     return 0
 
 def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
-    """Search the node that has the lowest combined cost and heuristic first."""
+    """Search the node that has the lowest combined cost and heuristic first.
+
+    Graph-search A*: each fringe entry is (state, path, g) where g is the cost
+    of path, and its priority is f = g + h(state). Popping always returns the
+    node with the smallest f. With nullHeuristic (h = 0) this is exactly UCS.
+
+    If the heuristic is admissible and consistent, f never decreases along a
+    path, so the first time a state is popped it already has its cheapest
+    cost. That is why a state is expanded at most once (bestCost) and why the
+    first goal popped is returned as an optimal path.
+    """
     start = problem.getStartState()
     fringe = util.PriorityQueue()              # priority = f(n) = g(n) + h(n)
     fringe.push((start, [], 0), heuristic(start, problem))
@@ -152,16 +162,18 @@ def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
 
     while not fringe.isEmpty():
         state, path, cost = fringe.pop()
+        # Goal test on pop, not on push: a cheaper path to the goal may still
+        # be waiting on the fringe when the goal is first generated.
         if problem.isGoalState(state):
             return path
         if state not in bestCost:
             bestCost[state] = cost
             for successor, action, stepCost in problem.getSuccessors(state):
                 if successor not in bestCost:
-                    newCost = cost + stepCost
+                    newCost = cost + stepCost      # g of the successor
                     fringe.push((successor, path + [action], newCost),
                                 newCost + heuristic(successor, problem))
-    return []
+    return []                                  # fringe empty -> no solution
 
 
 # Abbreviations

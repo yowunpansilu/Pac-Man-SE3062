@@ -275,7 +275,15 @@ class CornersProblem(search.SearchProblem):
     """
     This search problem finds paths through all four corners of a layout.
 
-    You must select a suitable state space and successor function
+    State: (position, visitedCorners)
+      position       -- Pacman's (x, y) square
+      visitedCorners -- tuple of 4 booleans, in the same order as self.corners
+
+    The state is small and hashable (only tuples), so it works in the
+    expanded set of graph search. It never stores the wall grid or the
+    GameState. The same square with different corners visited is a different
+    state, which is what lets graph search revisit a square later on.
+    cornersHeuristic (Q6) depends on this exact format.
     """
 
     def __init__(self, startingGameState: pacman.GameState):
@@ -295,15 +303,18 @@ class CornersProblem(search.SearchProblem):
         """
         Returns the start state (in your state space, not the full Pacman state
         space)
+
+        A corner counts as visited straight away if Pacman starts on it.
         """
-        # State = (position, visitedCorners); visitedCorners is a tuple of 4
-        # booleans aligned with self.corners. Small and hashable, no walls stored.
         visited = tuple(corner == self.startingPosition for corner in self.corners)
         return (self.startingPosition, visited)
 
     def isGoalState(self, state: Any):
         """
         Returns whether this search state is a goal state of the problem.
+
+        The goal is reached once all four corners are visited, wherever Pacman
+        is standing at that moment.
         """
         return all(state[1])                       # every corner visited
 
@@ -320,19 +331,15 @@ class CornersProblem(search.SearchProblem):
 
         successors = []
         position, visited = state
+        x, y = position
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
-            # Add a successor state to the successor list if the action is legal
-            # Here's a code snippet for figuring out whether a new position hits a wall:
-            #   x,y = currentPosition
-            #   dx, dy = Actions.directionToVector(action)
-            #   nextx, nexty = int(x + dx), int(y + dy)
-            #   hitsWall = self.walls[nextx][nexty]
-
-            x, y = position
+            # Move one square in this direction and skip the move if it hits a wall.
             dx, dy = Actions.directionToVector(action)
             nextx, nexty = int(x + dx), int(y + dy)
             if not self.walls[nextx][nexty]:
                 nextPos = (nextx, nexty)
+                # Copy the flags (tuples cannot change) and mark a corner as
+                # visited if Pacman steps onto it. Every move costs 1.
                 nextVisited = tuple(v or corner == nextPos
                                     for v, corner in zip(visited, self.corners))
                 successors.append(((nextPos, nextVisited), action, 1))
